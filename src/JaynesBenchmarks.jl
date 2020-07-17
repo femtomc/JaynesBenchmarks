@@ -62,17 +62,19 @@ simulation = obs -> begin
         # Complexity of filter step is constant as a size of the trace.
         particle_filter_step!(ps, (i, ), (), sel)
     end
-    tr = sample_unweighted_traces(ps, 1)
     return ps
 end
 
-# 
-obs = [rand() for i in 1:999]
+# Some set of observations.
+obs = [rand() for i in 1:499]
 
 println("Gen:")
+simulation(obs)
 ps = @btime simulation(obs)
 println(log_ml_estimate(ps))
+GC.gc()
 println("Jaynes:")
+j_simulation(obs)
 ps = @btime j_simulation(obs)
 println(ps.lmle)
 
