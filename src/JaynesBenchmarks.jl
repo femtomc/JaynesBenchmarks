@@ -74,24 +74,29 @@ function benchmark(t::Int)
     
     simulation(obs)
     t_start = time_ns()
-    simulation(obs)
+    ps = simulation(obs)
     g_time = (time_ns() - t_start) / 1e9
+    g_lmle = log_ml_estimate(ps)
    
     j_simulation(obs)
     t_start = time_ns()
-    j_simulation(obs)
+    ps = j_simulation(obs)
     j_time = (time_ns() - t_start) / 1e9
-    g_time, j_time
+    j_lmle = ps.lmle
+    g_time, j_time, g_lmle, j_lmle
 end
 
-steps = [10, 50, 100, 200, 500, 1000]
+steps = [10, 50]
 times = map(steps) do t
     benchmark(t)
 end
 
 println(times)
-g_plt = plot(steps, [t[1] for t in times], title = "Gen", label = "Unfold combinator + static DSL")
-j_plt = plot(steps, [t[2] for t in times], title = "Jaynes", label = "(markov) specialized call site")
-savefig(plot(g_plt, j_plt, layout = 2, palette = cgrad.([:grays :blues :heat :lightrainbow]), bg_inside = [:orange :pink :darkblue :black]), "benchmark_$(String(gensym())).pdf")
+l = @layout [a ; c]
+g_plt = plot(steps, [t[1] for t in times], title = "Time vs. unroll steps", label = "(Gen) Unfold combinator + static DSL")
+plot!(g_plt, steps, [t[2] for t in times], label = "(Jaynes) Markov-specialized call site")
+plt_lmle = plot(steps, [t[3] for t in times], title = "Log marginal likelihood of data", label = "Gen")
+plot!(plt_lmle, steps, [t[4] for t in times], label = "Jaynes")
+savefig(plot(g_plt, plt_lmle, layout = l, palette = cgrad.([:grays :blues :heat :lightrainbow]), bg_inside = [:orange :pink :darkblue :black]), "benchmark_$(String(gensym())).svg")
 
 end # module
