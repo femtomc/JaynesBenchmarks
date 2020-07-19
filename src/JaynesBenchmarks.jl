@@ -58,11 +58,11 @@ Gen.load_generated_functions()
 
 simulation = obs -> begin
     ps = initialize_particle_filter(g_sim, (0, ), choicemap(), 1000)
-    for i in 1 : length(obs) - 1
-        sel = Gen.choicemap((:chain => i => :x, obs[i]))
+    for t in 1 : length(obs) - 1
+        sel = Gen.choicemap((:chain => t => :x, obs[t]))
 
         # Complexity of filter step is constant as a size of the trace.
-        particle_filter_step!(ps, (i, ), (), sel)
+        Gen.particle_filter_step!(ps, (t,), (UnknownChange(),), sel)
     end
     return ps
 end
