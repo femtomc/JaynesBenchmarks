@@ -6,6 +6,8 @@ using BenchmarkTools
 using Plots
 gr()
 
+# ------------ Jaynes ------------ #
+
 # Markov kernel.
 function kernel(prev_latent::Float64)
     z = rand(:z, Normal(prev_latent, 1.0))
@@ -21,7 +23,8 @@ end
 
 # Note - off-by-one difference for markov specialize vs. Gen - try and fix later, I think it's irrelevant from a performance perspective.
 j_simulation = obs -> begin
-    ps = initialize_filter(selection(), 1000, kernelize, (1, ))
+    init_obs = selection((:z0, 0.0))
+    ps = initialize_filter(init_obs, 1000, kernelize, (1, ))
     for i in 2 : length(obs)
         sel = selection((:k => i => :x, obs[i - 1]))
 
@@ -30,6 +33,8 @@ j_simulation = obs -> begin
     end
     return ps
 end
+
+# ------------ Gen ------------ #
 
 # State for Unfold.
 struct State
@@ -57,7 +62,8 @@ end
 Gen.load_generated_functions()
 
 simulation = obs -> begin
-    ps = initialize_particle_filter(g_sim, (0, ), choicemap(), 1000)
+    init_obs = Gen.choicemap((:z0, 0.0))
+    ps = initialize_particle_filter(g_sim, (0, ), init_obs, 1000)
     for t in 1 : length(obs) - 1
         sel = Gen.choicemap((:chain => t => :x, obs[t]))
 
@@ -67,9 +73,9 @@ simulation = obs -> begin
     return ps
 end
 
-# Some set of observations.
 
 function benchmark(t::Int)
+    # Some set of observations.
     obs = [rand() for i in 1 : t]
     
     simulation(obs)
@@ -86,14 +92,14 @@ function benchmark(t::Int)
     g_time, j_time, g_lmle, j_lmle
 end
 
-steps = [10, 50]
+steps = [1, 3, 10, 30, 50, 100, 150, 200, 500]
 times = map(steps) do t
     benchmark(t)
 end
 
 println(times)
 l = @layout [a ; c]
-g_plt = plot(steps, [t[1] for t in times], title = "Time vs. unroll steps", label = "(Gen) Unfold combinator + static DSL")
+g_plt = plot(steps, [t[1] for t in times], title = "Time vs. unroll steps", label = "(Gen) Unfold combinator + static DSL", legend = :topleft)
 plot!(g_plt, steps, [t[2] for t in times], label = "(Jaynes) Markov-specialized call site")
 plt_lmle = plot(steps, [t[3] for t in times], title = "Log marginal likelihood of data", label = "Gen")
 plot!(plt_lmle, steps, [t[4] for t in times], label = "Jaynes")
