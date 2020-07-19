@@ -3,6 +3,8 @@ module JaynesBenchmarks
 using Gen
 using Jaynes
 using BenchmarkTools
+using Plots
+gr()
 
 # Markov kernel.
 function kernel(prev_latent::Float64)
@@ -20,7 +22,7 @@ end
 # Note - off-by-one difference for markov specialize vs. Gen - try and fix later, I think it's irrelevant from a performance perspective.
 j_simulation = obs -> begin
     ps = initialize_filter(selection(), 1000, kernelize, (1, ))
-    for i in 2:500
+    for i in 2 : length(obs)
         sel = selection((:k => i => :x, obs[i - 1]))
 
         # Complexity of filter step is constant as a size of the trace.
@@ -56,7 +58,7 @@ Gen.load_generated_functions()
 
 simulation = obs -> begin
     ps = initialize_particle_filter(g_sim, (0, ), choicemap(), 1000)
-    for i in 1:499
+    for i in 1 : length(obs) - 1
         sel = Gen.choicemap((:chain => i => :x, obs[i]))
 
         # Complexity of filter step is constant as a size of the trace.
@@ -66,16 +68,30 @@ simulation = obs -> begin
 end
 
 # Some set of observations.
-obs = [rand() for i in 1:499]
 
-println("Gen:")
-simulation(obs)
-ps = @btime simulation(obs)
-println(log_ml_estimate(ps))
-GC.gc()
-println("Jaynes:")
-j_simulation(obs)
-ps = @btime j_simulation(obs)
-println(ps.lmle)
+function benchmark(t::Int)
+    obs = [rand() for i in 1 : t]
+    
+    simulation(obs)
+    t_start = time_ns()
+    simulation(obs)
+    g_time = (time_ns() - t_start) / 1e9
+   
+    j_simulation(obs)
+    t_start = time_ns()
+    j_simulation(obs)
+    j_time = (time_ns() - t_start) / 1e9
+    g_time, j_time
+end
+
+steps = [10, 50, 100, 200, 500, 1000]
+times = map(steps) do t
+    benchmark(t)
+end
+
+println(times)
+g_plt = plot(steps, [t[1] for t in times], title = "Gen", label = "Unfold combinator + static DSL")
+j_plt = plot(steps, [t[2] for t in times], title = "Jaynes", label = "(markov) specialized call site")
+savefig(plot(g_plt, j_plt, layout = 2, palette = cgrad.([:grays :blues :heat :lightrainbow]), bg_inside = [:orange :pink :darkblue :black]), "benchmark_$(String(gensym())).pdf")
 
 end # module
