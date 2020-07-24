@@ -27,7 +27,7 @@ function fit_lotka_volterra()
 
     p = [α, β, γ, δ]
     prob = ODEProblem(lotka_volterra, u0, (0.0, 10.0), p)
-    predicted = solve(prob, Tsit5(), saveat=0.1)
+    predicted = solve(prob, saveat=0.1; sensealg = ZygoteAdjoint())
 
     for i = 1:length(predicted)
         rand(:obs => i, MvNormal(predicted[i], σ))
@@ -38,9 +38,9 @@ ret, cl = simulate(fit_lotka_volterra)
 display(cl.trace)
 
 # Inference.
-sel = selection([(:α, ), (:β, ), (:γ, ), (:σ, ), (:δ, )])
+addrs = [(:α, ), (:β, ), (:γ, ), (:σ, ), (:δ, )]
+sel = selection(addrs)
 
 new, acc = hmc(sel, cl)
-@time new, acc = hmc(sel, cl)
 
 end # module
