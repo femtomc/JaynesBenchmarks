@@ -18,6 +18,15 @@ end
 
 ret, cl = Jaynes.simulate(bar)
 display(cl.trace)
+
+sel = selection([(:foo, ) => (μ = 3.0, σ = 5.0)])
+ret, cl, w = Jaynes.generate(sel, bar)
+display(cl.trace)
 println(get_score(cl))
+
+sel = selection([(:foo, :μ)])
+ret, cl, w, rd, d = Jaynes.regenerate(sel, cl)
+display(cl.trace)
+println(get_score(cl) - w)
 
 end # module

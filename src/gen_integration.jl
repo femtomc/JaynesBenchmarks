@@ -18,10 +18,19 @@ end
 
 ret, cl = Jaynes.simulate(bar)
 display(cl.trace)
-gen_sel = choicemap((:x, 5.0))
-sel = selection([(:foo, ) => gen_sel])
+
+sel = selection([(:foo, :x) => 5.0])
 ret, cl, w = Jaynes.update(sel, cl)
 display(cl.trace)
-println(ret)
+
+sel = selection([(:foo, :x)])
+ret, cl, w, rd, d = Jaynes.regenerate(sel, cl)
+display(cl.trace)
+
+sel = selection([(:x, ) => 5.0,
+                 (:foo, :x) => 10.0,
+                 (:foo, :y) => 10.0])
+ret, score = Jaynes.score(sel, bar)
+println(score)
 
 end # module

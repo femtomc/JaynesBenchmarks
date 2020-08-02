@@ -10,10 +10,11 @@ m = @model σ begin
     y ~ Normal(μ, σ) |> iid(5)
 end
 
-@gen function foo(x::Float64)
+@gen (static) function foo(x::Float64)
     y = @trace(normal(x, 1.0), :y)
     return y
 end
+Gen.load_generated_functions()
 
 # Some generic function - this is where Jaynes shines!
 bar = () -> begin
