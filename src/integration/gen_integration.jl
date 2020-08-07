@@ -87,6 +87,8 @@ test = () -> begin
     display(cl.trace)
     z_array = Vector{Bool}(undef, 1000)
     for i in 1 : 1000
+
+        # This is a special kernel which selectively applies a kernel to a call site, then updates the rest of the trace accordingly.
         @time cl, _ = ex((), cl, combination_kernel)
         z_array[i] = get_ret(cl[:z])
     end
