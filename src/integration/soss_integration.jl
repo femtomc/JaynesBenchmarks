@@ -12,7 +12,7 @@ end
 # Some generic function - this is where Jaynes shines!
 bar = () -> begin
     x = rand(:x, Normal(5.0, 1.0))
-    soss_ret = soss_fmi(:foo, m, (σ = x,))
+    soss_ret = foreign(:foo, m, (σ = x,))
     return soss_ret
 end
 
