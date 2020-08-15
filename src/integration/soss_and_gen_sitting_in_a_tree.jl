@@ -3,6 +3,7 @@ module SossForeignModels
 using Jaynes
 Jaynes.@load_soss_fmi()
 Jaynes.@load_gen_fmi()
+Jaynes.@load_turing_fmi()
 
 # A Soss model.
 m = @model σ begin

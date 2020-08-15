@@ -3,8 +3,8 @@ module GenForeignModels
 using Jaynes
 Jaynes.@load_gen_fmi()
 
-@gen function model()
-    if ({:z} ~ bernoulli(0.5))
+@gen function model(p::Float64)
+    if ({:z} ~ bernoulli(p))
         m1 = ({:m1} ~ gamma(1, 1))
         m2 = ({:m2} ~ gamma(1, 1))
     else
@@ -78,19 +78,28 @@ combination_kernel(trace) = begin
     trace, acc1 || acc2
 end
 
-sel = selection([(:y1, ) => 1.0,
-                 (:y2, ) => 1.3,
-                 (:z, ) => false,
-                 (:m, ) => 1.2])
+# ---- Generic model ---- #
+
+mod = () -> begin
+    p = rand(:p, Beta(2, 2))
+    q = foreign(:gen, model, p)
+    q
+end
+
+sel = selection(:gen => selection([(:y1, ) => 1.0,
+                                   (:y2, ) => 1.3,
+                                   (:z, ) => false,
+                                   (:m, ) => 1.2]))
+
 test = () -> begin
-    ret, cl = Jaynes.generate(sel, model)
+    ret, cl = Jaynes.generate(sel, mod)
     display(cl.trace)
     z_array = Vector{Bool}(undef, 1000)
     for i in 1 : 1000
 
         # This is a special kernel which selectively applies a kernel to a call site, then updates the rest of the trace accordingly.
-        @time cl, _ = ex((), cl, combination_kernel)
-        z_array[i] = get_ret(cl[:z])
+        @time cl, _ = ex((:gen, ), cl, combination_kernel)
+        z_array[i] = get_ret(cl[:gen, :z])
     end
     z_array
 end
